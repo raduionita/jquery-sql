@@ -1,0 +1,198 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	<title></title>
+</head>
+<body>
+<!--
+// SELECT * FROM table WHERE a = 1
+// INSERT INTO table(id,email) VALUES(1, 'bad@mail.com')
+// UPADATE table SET column = 1 WHERE id = 1
+// DELETE FROM table WHERE id = 1
+
+// table => $object
+
+// QueryCommand
+    // -> limit : Pair (start => end)
+    // -> condition : Array                // WHERE
+        // 0 -> Pair(column => value)
+        // 1 -> Pair(column => value)
+    // -> target : Object
+        // table                           // #emement
+    // -> action : Action                  // SELECT, INSERT, UPDATE, DELETE
+        // select
+            // -> parameter : Array
+                // 0 -> *
+                // 1 -> column
+        // insert : Action
+            // -> parameter : Array
+                // 0 -> Pair (column => value)
+                // 1 -> Pair (column => value)
+        // update : Action
+            // -> parameter : Array
+                // 0 -> Pair (column => value)
+                // 1 -> Pair (column => value)
+        // delete : Action
+-->
+<table id="table">
+<tr>
+    <th data-id="id">Id</th>
+    <th data-id="name">Name</th>
+</tr>
+<tr>
+    <td>1</td>
+    <td>Radu</td>
+</tr>
+</table>
+
+<input type="number" id="test" />
+
+<script type="text/javascript" src="http://code.jquery.com/jquery-2.1.3.js"></script>
+<script type="text/javascript">
+
+$('#test').on('change', function(evt) {
+    console.log(evt);
+});
+
+
+String.prototype.trim = function(chars) {
+    chars = chars ? chars : ' ';
+    return this.replace(new RegExp('^(?:'+chars+')+|(?:'+chars+')+$', 'ig'), '');
+};
+
+var getNodeIndex = function(node) {
+    var i = 0;
+    while(node.previousSibling) {
+        node = node.previousSibling;
+        if(node.nodeType === 1)
+            ++i;
+    }
+    return i;
+};
+
+var Action = function(type, columns) {
+    this.type = type;
+    this.columns = columns.split(',');
+    for(var i in this.columns)
+        this.columns[i] = this.columns[i].trim();
+};
+
+var Target = function(target) {
+    this.target = $(target);
+};
+
+var Condition = function(condition) {
+    
+};
+
+var Limit = function(limit) {
+
+};
+
+var Command = function() {
+    this.action = null;
+    this.target = null;
+    this.condition = null;
+    this.limit  = null;
+    
+    this.execute = function() {
+        console.log('execute');
+        
+        var result = [];
+        
+        // search if there is a thead
+        // search for td/th with column names, by data-id, id, data-column or text
+        // remember thier indices
+        // using those indices get values from the rest of the table
+        
+        var indices = {};
+        var header  = this.target.target.find('tr:first');
+        for(var i in this.action.columns) {
+            var id  = this.action.columns[i];
+            var obj = header.find('[data-id="'+ id +'"]');
+            indices[id] = getNodeIndex(obj[0]);
+        }
+        
+        var trs = this.target.target.find('tr:not(:first)');
+        trs.each(function(i) {
+            var row = {};
+            for(var i in indices)
+                row[i] = null;
+            
+            var tds = $(this).find('td');
+            
+            console.log(tds);
+            
+            result.push(row);
+        });
+        
+        
+        return result;
+    };
+    
+    
+};
+
+$.query = function(query) {
+    console.log(query);
+    var action, condition, limit, target, parameter, command, pos;
+    
+    pos = query.indexOf(' ');
+    action = query.substr(0, pos).toUpperCase();
+    query  = query.substr(pos + 1);
+    
+    command = new Command();
+    
+    
+    
+    switch(action) {
+        case 'SELECT':
+            pos = query.indexOf('LIMIT');
+            if(pos > -1) {
+                limit = query.substr(pos + 5 + 1);
+                query = query.substr(0, pos);
+                command.limit = new Limit(limit);
+            }
+            
+            pos = query.indexOf('WHERE');
+            if(pos > -1) {
+                condition = query.substr(pos + 5 + 1);
+                query = query.substr(0, pos);
+                command.condition = new Condition(condition);
+            }
+            
+            pos = query.indexOf('FROM');
+            if(pos > -1) {
+                target = query.substr(pos + 4 + 1);
+                query  = query.substr(0, pos);
+                command.target = new Target(target);
+            }
+            
+            parameter = query.substr(0);
+            
+            command.action = new Action(action, parameter);
+        break;
+        case 'INSERT':
+            
+        break;
+        case 'UPDATE':
+            
+        break;
+        case 'DELETE':
+            
+        break;
+    }
+    
+    
+    console.log(command);
+
+    return command.execute();
+};
+
+//var status  = $.query("DELETE FROM #table WHERE id = 0");
+var results = $.query("SELECT id, name FROM #table");
+console.log(results);
+</script>
+</body>
+</html>
